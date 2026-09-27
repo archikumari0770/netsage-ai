@@ -1,0 +1,582 @@
+case_id,symptom,topology_note,show_output,expected_fault,osi_layer,concept_tag,severity
+C001,"PC0 on the NetworkGeek network cannot reach the Facebook server, but can still reach the Google server and internal devices normally",NetworkGeek Router connects LAN (192.168.1.0/24) to ISP Router via 192.168.2.0/24 link; static routes point to Facebook (173.252.0.0/16) and Google (74.0.0.0/8) networks,"show ip route (on NetworkGeek Router):
+S    74.0.0.0/8 [1/0] via 192.168.2.2
+C    192.168.1.0/24 is directly connected, FastEthernet0/1
+C    192.168.2.0/24 is directly connected, FastEthernet0/0",Static route to Facebook network (173.252.0.0/16) was removed from the NetworkGeek Router,Layer 3,Routing / Static Route,High
+C002,"PC0 on the NetworkGeek network cannot reach the Google server, but can still reach the Facebook server and internal devices normally",NetworkGeek Router connects LAN (192.168.1.0/24) to ISP Router via 192.168.2.0/24 link; static routes point to Facebook (173.252.0.0/16) and Google (74.0.0.0/8) networks,"show ip route (on NetworkGeek Router):
+S    74.0.0.0/8 [1/0] via 192.168.2.9
+S    173.252.0.0/16 [1/0] via 192.168.2.2
+C    192.168.1.0/24 is directly connected, FastEthernet0/1
+C    192.168.2.0/24 is directly connected, FastEthernet0/0",Static route to Google network has an incorrect next-hop IP (192.168.2.9 instead of the correct 192.168.2.2),Layer 3,Routing / Static Route,High
+C003,"Network connectivity to PC0 still works, but a technician notices Router3 no longer routes traffic through its connection toward Router4 — all traffic now takes a longer path through Router1 and Router2 instead",6-router RIP ring topology (Router0-Router5) connecting PC1 (192.168.1.x) to PC0 (192.168.8.x); redundant paths exist in both directions around the ring,"show ip route (on Router3):
+R    192.168.1.0/24 [120/1] via 192.168.4.1, FastEthernet0/0
+R    192.168.2.0/24 [120/1] via 192.168.4.1, FastEthernet0/0
+R    192.168.3.0/24 [120/2] via 192.168.4.1, FastEthernet0/0
+C    192.168.4.0/24 is directly connected, FastEthernet0/0
+C    192.168.5.0/24 is directly connected, FastEthernet0/1
+R    192.168.6.0/24 [120/4] via 192.168.4.1, FastEthernet0/0
+R    192.168.7.0/24 [120/3] via 192.168.4.1, FastEthernet0/0
+R    192.168.8.0/24 [120/3] via 192.168.4.1, FastEthernet0/0
+
+(All routes now via FastEthernet0/0 only — none via FastEthernet0/1, confirming that segment is no longer being advertised)","RIP network statement for 192.168.5.0 was removed from Router3, stopping advertisement through that segment; ring topology's redundant path masked the failure from end users",Layer 3,Routing / RIP / Redundancy,Medium
+C004,"PC0 can reach PC2 (192.168.4.2) normally, but cannot reach PC1 (192.168.2.2) or PC4 (192.168.2.3) at all — both show as completely unreachable","6-PC network with 2 routers; Router0 has switches on 1.0/24, 2.0/24, 3.0/24 subnets; ACL 10 applied outbound on FastEthernet0/1 (facing 192.168.2.0/24 network)","show access-lists (on Router0):
+Standard IP access list 10
+    10 deny host 192.168.2.20
+
+show running-config (relevant section):
+interface FastEthernet0/1
+ ip address 192.168.2.1 255.255.255.0
+ ip access-group 10 out","ACL 10 was written to deny a single (nonexistent, mistyped) host, but the intended ""permit any"" statement was never successfully added. Since standard ACLs end with an implicit ""deny all,"" this caused ALL traffic outbound on FastEthernet0/1 to be blocked, cutting off the entire 192.168.2.0/24 subnet instead of just one host.",Layer 3,ACL,High
+C005,"PC1 shows ""DHCP request failed"" and receives no IP address, even though PC0 on the same network already has a working DHCP lease","Simple DHCP topology: Router0 with 2 pools (192.168.1.0/24 and 192.168.2.0/24), one switch per subnet, 2 PCs per subnet","show ip dhcp pool (on Router0):
+Pool one:
+  Total addresses: 254
+  Leased addresses: 1
+  Excluded addresses: 1
+  Current index 192.168.1.1, range 192.168.1.1 - 192.168.1.254
+
+show running-config (relevant line):
+ip dhcp excluded-address 192.168.1.2 192.168.1.254","An overly broad DHCP exclusion range (192.168.1.2 to 192.168.1.254) was accidentally configured, excluding nearly the entire usable address pool and leaving no addresses available for new DHCP clients",Layer 3 or Layer 7,DHCP,High
+C006,"PC2 successfully receives an IP address via DHCP but cannot reach devices on the other subnet (e.g., PC0), even though its own network segment works fine","Simple DHCP topology: Router0 with 2 pools (192.168.1.0/24 and 192.168.2.0/24), one switch per subnet, 2 PCs per subnet","PC2 IP Configuration (via DHCP):
+IPv4 Address: 192.168.2.2
+Subnet Mask: 255.255.255.0
+Default Gateway: 192.168.2.99   <- incorrect, real gateway is 192.168.2.1
+
+Router0 config:
+ip dhcp pool two
+ network 192.168.2.0 255.255.255.0
+ default-router 192.168.2.99
+ dns-server 8.8.8.8","DHCP pool ""two"" was configured with an incorrect default-router value (192.168.2.99 instead of the actual gateway 192.168.2.1), causing clients to receive a valid IP but an unreachable gateway addressDHCP pool ""two"" was configured with an incorrect default-router value (192.168.2.99 instead of the actual gateway 192.168.2.1), causing clients to receive a valid IP but an unreachable gateway address",Layer 3,DHCP,Medium
+C007,"PC0 (behind NAT) cannot reach the Google Server (200.2.2.3), even though NAT and local network configuration appear correct","NAT overload topology: Router0 (inside, 192.168.1.0/24) connects via 200.1.1.0/24 WAN link to Router1 (outside, 200.2.2.0/24 with PC2 and Google Server)","show ip route (on Router0):
+C    192.168.1.0/24 is directly connected, FastEthernet0/0
+C    200.1.1.0/24 is directly connected, FastEthernet0/1
+(no route to 200.2.2.0/24 present)
+
+show ip nat translation (on Router0):
+(empty — no active translations)","The static route to the destination network (200.2.2.0/24) was removed from Router0. NAT configuration itself (ip nat inside/outside, overload rule) remains correct, but packets have no path to reach the destination, so no translation ever occurs",Layer 3,NAT,High
+C008,"A new/unauthorized device (RogueClient2) connected to switch port Fa0/7 cannot reach the network at all — ping to the gateway (192.168.200.1) times out 100%, and the port itself goes link-down shortly after the device attempts to communicate","MLS3560 switch, Fa0/7 configured with port security (max MAC = 1, sticky learning, violation mode = shutdown). Port previously learned RogueClient (Laptop) MAC via sticky learning. RogueClient (Laptop) was disconnected and replaced with a new device, RogueClient2 (PC-PT, IP 192.168.200.99/24), on the same port","Switch CLI, after RogueClient2 generates traffic (ping):
+%LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/7, changed state to down
+%PM-4-ERR_DISABLE: psecure-violation error detected on Fa0/7, putting Fa0/7 in err-disable state.
+%PORT_SECURITY-2-PSECURE_VIOLATION: Security violation occurred, caused by MAC address 0002.4A43.EBA8 on port FastEthernet0/7.
+
+show port-security interface fa0/7:
+Port Security             : Enabled
+Port Status               : Secure-shutdown
+Violation Mode            : Shutdown
+Maximum MAC Addresses     : 1
+Total MAC Addresses       : 1
+Sticky MAC Addresses      : 1
+Last Source Address:Vlan  : 0002.4A43.EBA8:200
+Security Violation Count  : 1
+
+RogueClient2, ping 192.168.200.1:
+Request timed out. x4
+Ping statistics: Sent = 4, Received = 0, Lost = 4 (100% loss)","Port Fa0/7 had port security enabled with sticky MAC learning (max 1 address) and violation mode set to shutdown. The port had already learned and locked the original device's (RogueClient/Laptop) MAC address. When that device was disconnected and replaced with a different device (RogueClient2) presenting a new, unrecognized MAC address, the switch detected the mismatch as soon as the new device generated traffic (ARP/ICMP from the ping attempt). Per the configured violation mode, the switch immediately put the port into err-disabled state (Secure-shutdown), blocking all traffic — including from legitimate devices — until the port is manually re-enabled (shutdown/no shutdown) or the correct device is reconnected",Layer 2,Port Security Violation,High
+C009,"Multiple PCs across different VLANs (e.g., Staff-10 in VLAN10, IT-30 in VLAN30) intermittently or fully lose connectivity to the DC Server. VLAN30 PC can still reach its own HSRP gateway (192.168.30.1) normally. C-RT2 shows zero OSPF neighbors.","C-RT2 is HSRP standby router for VLAN10/20 and HSRP active router for VLAN30, reachable via trunk (GigabitEthernet0/1.10, .20, .30) to D-SW2, and connects to DMZ-Switch (multilayer 3550-24PS) via GigabitEthernet0/0 on 192.168.4.0/24. OSPF area 0 runs across the entire network for inter-VLAN and inter-router reachability.","C-RT2# show run | section router ospf   (before fault)
+router ospf 1
+ router-id 5.5.5.5
+ log-adjacency-changes
+ passive-interface GigabitEthernet0/1
+ network 0.0.0.0 255.255.255.255 area 0
+
+--- fault applied ---
+C-RT2(config-router)#no network 0.0.0.0 255.255.255.255 area 0
+C-RT2(config-router)#network 192.168.4.0 0.0.0.0 area 0
+
+%OSPF-5-ADJCHG: Process 1, Nbr 4.4.4.4 on GigabitEthernet0/0 from FULL to DOWN
+%OSPF-5-ADJCHG: Process 1, Nbr 6.6.6.6 on GigabitEthernet0/1.10 from FULL to DOWN
+%OSPF-5-ADJCHG: Process 1, Nbr 6.6.6.6 on GigabitEthernet0/1.20 from FULL to DOWN
+%OSPF-5-ADJCHG: Process 1, Nbr 6.6.6.6 on GigabitEthernet0/1.30 from FULL to DOWN
+
+C-RT2# show ip ospf neighbor
+(empty - no neighbors)
+
+PC IT-30> ping 192.168.30.1   → Reply, 0% loss (gateway, same subnet)
+PC IT-30> ping 192.168.1.10   → Request timed out (100% loss)
+PC Staff-10> ping 192.168.1.10 → Request timed out (100% loss)","OSPF network statement on C-RT2 uses wildcard 0.0.0.0 with address 192.168.4.0, which requires an exact match to that address. C-RT2's actual interface IP is 192.168.4.2, so no interface matches the statement at all — OSPF becomes disabled on every interface (Gi0/0, Gi0/1.10, Gi0/1.20, Gi0/1.30), dropping all 4 adjacencies router-wide instead of isolating to a single link.",Layer 3,OSPF / Network Statement Wildcard Mask,High
+C010,"PC HR-20 in VLAN20 can ping its default gateway (192.168.20.1) successfully with 0% loss, but cannot reach the DC Server (192.168.1.10) — 100% loss. C-RT1 still shows as HSRP Active for VLAN20 despite its uplink interface (GigabitEthernet0/0) being administratively down.","C-RT1 and C-RT2 run HSRP for VLAN20 on subinterface GigabitEthernet0/1.20 (192.168.20.0/24). C-RT1 is configured as active (priority 105, preempt) and connects upstream to DMZ-Switch via GigabitEthernet0/0 (192.168.3.2). C-RT2 is standby, reachable via GigabitEthernet0/1.20 (192.168.20.2).","C-RT1# show running-config | section interface GigabitEthernet0/1.20   (before fault)
+interface GigabitEthernet0/1.20
+ encapsulation dot1Q 20
+ ip address 192.168.20.2 255.255.255.0
+ standby 20 ip 192.168.20.1
+ standby 20 priority 105
+ standby 20 preempt
+ standby 20 track GigabitEthernet0/0
+
+--- fault applied ---
+C-RT1(config-subif)#no standby 20 track GigabitEthernet0/0
+C-RT1(config-if)#shutdown   (on GigabitEthernet0/0)
+
+%LINK-5-CHANGED: Interface GigabitEthernet0/0, changed state to administratively down
+%LINEPROTO-5-UPDOWN: Line protocol on Interface GigabitEthernet0/0, changed state to down
+%OSPF-5-ADJCHG: Process 1, Nbr 4.4.4.4 on GigabitEthernet0/0 from FULL to DOWN
+
+C-RT1# show standby brief
+Interface  Grp  Pri  P  State     Active  Standby        Virtual IP
+Gig20      105  P    Active      local   192.168.20.3   192.168.20.1
+
+C-RT2# show standby brief
+Interface  Grp  Pri  P  State     Active         Standby   Virtual IP
+Gig20      100  P    Standby     192.168.20.2   local     192.168.20.1
+
+PC HR-20> ping 192.168.20.1   → Reply, 0% loss (gateway)
+PC HR-20> ping 192.168.1.10   → Request timed out, 100% loss (DC Server)","The 'standby 20 track GigabitEthernet0/0' line was removed from C-RT1's VLAN20 subinterface. When the real uplink (Gi0/0) later goes down, HSRP has no mechanism to detect the failure and lower C-RT1's priority, so C-RT1 incorrectly remains HSRP Active for VLAN20 with no actual path to the rest of the network. C-RT2 never takes over because it never observes a priority change.",Layer 3 (First-Hop Redundancy / Layer 1-2 uplink dependency),HSRP / Interface Tracking,High
+C011,"Users in VLAN10/VLAN20 experience a brief period of high latency and intermittent connectivity to the DC Server (192.168.1.10), then recover; gateway pings show elevated round-trip time (~150ms+) and duplicate/delayed replies during the event. D-SW1 shows one port of its EtherChannel to A-SW1 as suspended, while A-SW1's own EtherChannel summary shows no problem at all.","A-SW1 and D-SW1 are connected via a 2-port LACP EtherChannel (A-SW1: Po2, Fa0/21+Fa0/22; D-SW1: Po3, Fa0/21+Fa0/22), part of the redundant link bundle between access and distribution layers. Both switches originally ran channel-group mode 'active' (LACP) on all member ports.","D-SW1# interface FastEthernet0/21
+D-SW1(config-if)# switchport mode access
+
+%EC-5-CANNOT_BUNDLE2: Fa0/21 is not compatible with Fa0/22 and will be
+suspended (dtp mode of Fa0/21 is off, Fa0/22 is on)
+
+D-SW1# show etherchannel summary
+3   Po3(SU)   LACP   Fa0/21(s)  Fa0/22(P)
+4   Po4(SU)   LACP   Fa0/23(P)  Fa0/24(P)
+
+A-SW1# show etherchannel summary   (same time, opposite side)
+2   Po2(SU)   LACP   Fa0/21(P)  Fa0/22(P)
+4   Po4(SU)   LACP   Fa0/23(P)  Fa0/24(P)
+
+PC Staff-10> ping 192.168.10.1
+Request timed out.
+Request timed out.
+Reply from 192.168.10.1: ... time=157ms  (x6, elevated latency)
+Ping statistics: Sent = 4, Received = 8, Lost = 0 (0% loss)
+
+PC Staff-10> ping 192.168.1.10
+Request timed out. (x4)
+Ping statistics: Sent = 4, Received = 0, Lost = 4 (100% loss)","FastEthernet0/21 on D-SW1 was changed from trunk (dynamic/DTP-negotiated) to switchport mode access, while its EtherChannel partner port Fa0/22 remained trunk. Since all ports in an EtherChannel bundle must share identical switchport parameters, D-SW1 automatically suspended Fa0/21 (EC-5-CANNOT_BUNDLE2), reducing the channel to a single active link. The mismatch is only visible from D-SW1's side; A-SW1's own EtherChannel summary shows both ports healthy since its local configuration is unchanged, requiring the technician to check both ends to diagnose the fault. The reduced bundle triggered an STP recalculation, causing a temporary connectivity disruption to downstream resources like the DC Server.",Layer 2,EtherChannel / Switchport Mode Mismatch (Trunk vs Access),Medium
+C012,"BR-PC1 (10.1.1.100, behind BR-01) cannot reach any HQ-side resource, including the DC Server (192.168.1.10). Ping to HQ's WAN address (60.240.29.1) times out; ping to DC Server returns explicit ""Destination host unreachable"" from BR-01 (10.1.1.1), indicating BR-01 has no route at all to HQ's networks. ISP's OSPF neighbor with HQ (router-id 3.3.3.3) shows Dead Timer expired.","HQ (ISR4321) connects to ISP (ISR4331) via GigabitEthernet0/0/0 on 60.240.29.0/30 (HQ=.1, ISP=.2), running OSPF area 0. ISP also connects to BR-01 (ISR4321) via a separate link (60.240.29.4/30), and BR-01 connects to BR-PC1 via 10.1.1.0/24.","HQ# show running-config | section interface   (before fault)
+interface GigabitEthernet0/0/0
+ ip address 60.240.29.1 255.255.255.252
+ ip ospf 1 area 0
+
+--- fault applied ---
+HQ(config-if)#ip address 60.240.29.1 255.255.255.0
+
+06:18:14: %OSPF-5-ADJCHG: Process 1, Nbr 2.2.2.2 on GigabitEthernet0/0/0 from FULL to DOWN, Neighbor Down: Interface down or detached
+
+HQ# show ip route
+C   60.240.29.0/24 is directly connected, GigabitEthernet0/0/0
+L   60.240.29.1/32 is directly connected, GigabitEthernet0/0/0
+(no more O routes via ISP)
+
+ISP# show ip ospf neighbor
+06:18:49: %OSPF-5-ADJCHG: Process 1, Nbr 3.3.3.3 on GigabitEthernet0/0/0 from FULL to DOWN, Dead Timer expired
+
+Neighbor ID   Pri  State       Dead Time  Address        Interface
+1.1.1.1       1    FULL/BDR    00:00:37   60.240.29.6    GigabitEthernet0/0/1
+(3.3.3.3 / HQ no longer listed)
+
+PC BR-PC1> ping 60.240.29.1
+Request timed out. (x4, 100% loss)
+
+PC BR-PC1> ping 192.168.1.10
+Reply from 10.1.1.1: Destination host unreachable. (x4)","HQ's WAN interface (GigabitEthernet0/0/0, link to ISP) had its subnet mask changed from /30 (255.255.255.252) to /24 (255.255.255.0), while ISP's side remained /30. OSPF requires matching subnet masks between neighbors on a shared link, so the mismatch tore down the HQ-ISP adjacency (router-id 3.3.3.3 on ISP's side). This removed ISP's only learned path to HQ's internal networks, which in turn caused BR-01 (behind ISP) to lose its route to those networks entirely, cutting off BR-PC1 from all HQ-side resources.",Layer 3,OSPF / Subnet Mask Mismatch (WAN link),High
+C013,"Staff-10 (VLAN10) can still ping its default gateway (192.168.10.1) normally (0% loss), but cannot reach the DC Server (192.168.1.10) — 100% loss. Both C-RT1 and C-RT2 log repeated %IP-4-DUPADDR duplicate address warnings for 192.168.10.1, each sourced from a different MAC address. Both routers report themselves as HSRP Active for their respective group.","C-RT1 and C-RT2 both run HSRP on GigabitEthernet0/1.10 for VLAN10 (192.168.10.0/24), originally both in HSRP group 10 sharing virtual IP 192.168.10.1, with C-RT2 as active (priority 100) and C-RT1 as standby (priority 105 pre-fault... adjusted per case).","C-RT1# show running-config | section interface GigabitEthernet0/1.10   (before)
+ standby 10 ip 192.168.10.1
+ standby 10 priority 105
+ standby 10 preempt
+ standby 10 track GigabitEthernet0/0
+
+--- fault applied on C-RT1 ---
+C-RT1(config-subif)#no standby 10 ip 192.168.10.1
+C-RT1(config-subif)#no standby 10 priority 95
+C-RT1(config-subif)#standby 15 ip 192.168.10.1
+C-RT1(config-subif)#standby 15 priority 95
+
+%HSRP-6-STATECHANGE: GigabitEthernet0/1.10 Grp 15 state Standby -> Active
+%IP-4-DUPADDR: Duplicate address 192.168.10.1 on GigabitEthernet0/1.10, sourced by 0000.0C07.AC0A   (repeating)
+
+C-RT2# (unmodified)
+%IP-4-DUPADDR: Duplicate address 192.168.10.1 on GigabitEthernet0/1.10, sourced by 0000.0C07.AC0F   (repeating)
+
+C-RT1# show standby brief
+Interface  Grp  Pri  P  State   Active  Standby   Virtual IP
+Gig15      95      Active  local   unknown   192.168.10.1
+Gig20      105  P  Active  local   192.168.20.3   192.168.20.1
+Gig30      100  P  Standby 192.168.30.3  local    192.168.30.1
+
+C-RT2# show standby brief
+Interface  Grp  Pri  P  State   Active  Standby   Virtual IP
+Gig10      100  P  Active  local   unknown   192.168.10.1
+Gig20      100  P  Standby 192.168.20.2  local    192.168.20.1
+Gig30      105  P  Active  local   192.168.30.2   192.168.30.1
+
+PC Staff-10> ping 192.168.10.1   → Reply, 0% loss
+PC Staff-10> ping 192.168.1.10   → Request timed out, 100% loss","C-RT1's HSRP configuration on GigabitEthernet0/1.10 was changed from group 10 to group 15, while keeping the same virtual IP (192.168.10.1). Because HSRP treats group number as the instance identifier, C-RT1 and C-RT2 no longer recognize each other as HSRP peers, and both independently become Active for the same virtual IP under their own separate group. This triggers continuous IP-4-DUPADDR duplicate-address warnings and causes intermittent/unpredictable gateway MAC resolution, disrupting traffic beyond the local subnet even though same-subnet pings to the gateway may still succeed.",Layer 2/3 (HSRP virtual MAC + IP),HSRP / Group Number Mismatch (Dual-Active),High
+C014,"Staff-10 (VLAN10) cannot ping the DC Server (192.168.1.10) — 100% loss, pure timeouts with no explicit rejection. C-RT1 and DMZ-Switch both log an OSPF neighbor going from FULL to DOWN with ""Dead timer expired"" simultaneously.","C-RT1 (router-id 6.6.6.6) connects to DMZ-Switch (multilayer 3550-24PS, router-id 4.4.4.4) via GigabitEthernet0/0 on 192.168.3.0/24. This link carries OSPF traffic toward the DC Server subnet (192.168.1.0/24) and other downstream networks. C-RT1 also has separate OSPF adjacencies with router-id 5.5.5.5 (C-RT2) via subinterfaces Gi0/1.10, .20, .30, which remain unaffected.","C-RT1# show ip ospf interface GigabitEthernet0/0   (before fault)
+  Timer intervals configured, Hello 10, Dead 40, Wait 40, Retransmit 5
+
+DMZ-Switch# show ip ospf interface GigabitEthernet1/0/2   (before fault)
+  Timer intervals configured, Hello 10, Dead 40, Wait 40, Retransmit 5
+
+--- fault applied on C-RT1 ---
+C-RT1(config-if)#ip ospf hello-interval 5
+C-RT1(config-if)#ip ospf dead-interval 20
+
+06:27:09: %OSPF-5-ADJCHG: Process 1, Nbr 4.4.4.4 on GigabitEthernet0/0 from FULL to DOWN, Dead timer expired
+
+C-RT1# show ip ospf interface GigabitEthernet0/0
+  Timer intervals configured, Hello 5, Dead 20, Wait 20, Retransmit 5
+  Neighbor Count is 0, Adjacent neighbor count is 0
+
+DMZ-Switch# 06:27:09: %OSPF-5-ADJCHG: Process 1, Nbr 6.6.6.6 on GigabitEthernet1/0/2 from FULL to DOWN, Dead timer expired
+
+DMZ-Switch# show ip ospf neighbor
+Neighbor ID   State       Interface
+3.3.3.3       FULL/BDR    GigabitEthernet1/0/3
+5.5.5.5       FULL/DR     GigabitEthernet1/0/1
+(6.6.6.6 no longer listed)
+
+PC Staff-10> ping 192.168.1.10
+Request timed out. (x4, 100% loss)","C-RT1's OSPF hello-interval and dead-interval on GigabitEthernet0/0 were changed from the default (Hello 10s, Dead 40s) to Hello 5s, Dead 20s, while DMZ-Switch's side of the same link kept the defaults. OSPF requires both neighbors on a link to use identical hello and dead timers; the mismatch caused the existing adjacency to expire via the dead timer rather than negotiate, dropping the neighbor relationship (router-id 4.4.4.4) entirely. This removed C-RT1's only path to networks reachable via DMZ-Switch, including the DC Server subnet, while C-RT1's other OSPF adjacencies (to C-RT2) remained unaffected.",Layer 3,OSPF / Hello-Dead Timer Mismatch,High
+C015,"PC4 (behind R3, GigabitEthernet0/0/0 segment) fails to obtain an IP address via DHCP — ""DHCP request failed"", no IP/mask/gateway assigned. PC5 (behind R3, GigabitEthernet0/0/1 segment) leases an address normally from Server1.","R3 has two LAN-facing interfaces each relaying DHCP to Server1 (192.168.77.114): GigabitEthernet0/0/0 (192.168.77.129/28, serving PC4 via SW5) and GigabitEthernet0/0/1 (192.168.77.65/27, serving PC5 via SW6). Both originally had 'ip helper-address 192.168.77.114' configured.","R3# show running-config | section interface   (before fault)
+interface GigabitEthernet0/0/0
+ ip address 192.168.77.129 255.255.255.240
+ ip helper-address 192.168.77.114
+interface GigabitEthernet0/0/1
+ ip address 192.168.77.65 255.255.255.224
+ ip helper-address 192.168.77.114
+
+--- fault applied ---
+R3(config)#interface GigabitEthernet0/0/0
+R3(config-if)#no ip helper-address 192.168.77.114
+
+R3# show running-config | section interface GigabitEthernet0/0/0
+interface GigabitEthernet0/0/0
+ ip address 192.168.77.129 255.255.255.240
+ (no ip helper-address line)
+
+PC4> IP Configuration → DHCP
+Result: DHCP request failed. (no IP/mask/gateway/DNS assigned)
+
+PC5> IP Configuration → DHCP
+Result: DHCP request successful.
+IPv4 Address: 192.168.77.68
+Subnet Mask: 255.255.255.224
+Default Gateway: 192.168.77.65
+DNS Server: 192.168.77.114","The 'ip helper-address 192.168.77.114' command was removed from R3's GigabitEthernet0/0/0 interface. Without this command, R3 no longer relays DHCP broadcast requests (DHCPDISCOVER) from PC4's segment to the DHCP server (Server1), since routers do not forward broadcast traffic by default. PC4 cannot obtain a lease and falls back to no configured address. GigabitEthernet0/0/1 retained its helper-address, so PC5 on that segment continues to lease normally, confirming the fault is isolated to the single interface.",Layer 3 (DHCP Relay),DHCP / IP Helper-Address,Medium
+C016,"SSH login to R1 (192.168.77.1) from PC4 using the known/documented credentials (username admin, password admin) fails with repeated password prompts, ending in ""Password: timeout expired!"" and connection closed. The same SSH attempt succeeds immediately when using password ""admin123"" instead.",R1's vty lines (0-4) use plain 'login' with a single shared password (not per-user 'login local'). SSH is enabled (version 2.0 default) for remote administrative access to R1.,"R1# show running-config | section line vty   (before fault)
+line vty 0 4
+ exec-timeout 0 0
+ password admin
+ logging synchronous
+ login
+
+--- fault applied ---
+R1(config)#line vty 0 4
+R1(config-line)#no password admin123
+R1(config-line)#password admin123
+
+R1# show running-config | section line vty
+line vty 0 4
+ exec-timeout 0 0
+ password admin123
+ logging synchronous
+ login
+
+PC4> ssh -l admin 192.168.77.1
+Password: [entered: admin]
+Password: [entered: admin]
+Password: [entered: admin]
+% Password: timeout expired!
+[Connection to 192.168.77.1 closed by foreign host]
+
+PC4> ssh -l admin 192.168.77.1
+Password: [entered: admin123]
+R1>   (session established successfully)","R1's vty line password was changed from 'admin' to 'admin123'. Since the vty configuration uses plain 'login' (not 'login local'), authentication is based solely on this single shared password rather than the username. Anyone attempting to SSH in with the previously known/documented password ('admin') is rejected after exhausting the configured authentication retries (3), while the connection succeeds normally with the new password, confirming the router and SSH service itself are functioning correctly.",Layer 7,SSH / VTY Password Mismatch,Medium
+C017,"PC4 can resolve the hostname ""router1"" via DNS (Server1 responds with a valid-looking non-authoritative answer), but pinging ""router1"" by name fails with 100% loss. Pinging R1's actual loopback IP (1.1.1.1) directly succeeds with 0% loss, confirming R1 itself is fully reachable and the network path is healthy.","Server1 (192.168.77.114) runs the DNS service for the network, with an A record mapping the name ""router1"" to R1's Loopback0 interface. R1's real, correct Loopback0 address is 1.1.1.1.","Server1 DNS Resource Records (before fault):
+router1   A Record   1.1.1.1
+
+--- fault applied ---
+Server1 DNS Resource Records (after fault):
+router1   A Record   192.168.77.9
+
+PC4> nslookup router1
+Server:  [192.168.77.114]
+Address:  192.168.77.114
+Non-authoritative answer:
+Name:    router1
+Address:  192.168.77.9
+
+PC4> ping router1
+Pinging 192.168.77.9 with 32 bytes of data:
+Request timed out. (x4)
+Ping statistics for 192.168.77.9: Sent = 4, Received = 0, Lost = 4 (100% loss)
+
+PC4> ping 1.1.1.1
+Reply from 1.1.1.1: bytes=32 time=9ms TTL=254 (x4)
+Ping statistics for 1.1.1.1: Sent = 4, Received = 4, Lost = 0 (0% loss)","The A record for ""router1"" on Server1's DNS service was changed from R1's correct Loopback0 address (1.1.1.1) to an unused, non-existent address (192.168.77.9). DNS resolution succeeds normally and returns a valid-looking answer, so name lookup itself shows no error. However, since no device owns 192.168.77.9, any traffic sent to the resolved name fails, while R1 remains fully reachable via its real IP — demonstrating that a DNS misconfiguration can mimic total unreachability of a device even though the device and network path are completely healthy.",Layer 7,DNS / Incorrect A Record,Medium
+C018,"No connectivity or routing impact. R2 (intended as NTP master, stratum 3) shows stratum 15 after configuration change. R3, an NTP client of R2, silently re-synchronizes and reports itself at stratum 15 as well, still marked as synchronized with R2 as its selected system peer -- no error or alarm is raised despite the severely degraded time quality.","R2 is configured as the network's NTP master (originally stratum 3, using its internal reference clock 127.127.1.1). R3 (and other routers) are NTP clients pointed at R2 (ntp server 2.2.2.2, R2's router-id/loopback), normally synchronizing one stratum above their source.","R2# show ntp status   (before fault)
+Clock is synchronized, stratum 3, reference is 127.127.1.1
+
+--- fault applied ---
+R2(config)#no ntp master 3
+R2(config)#ntp master 15
+
+R2# show ntp status
+Clock is synchronized, stratum 15, reference is 127.127.1.1
+
+R3# show ntp status   (before fault)
+Clock is synchronized, stratum 4, reference is 192.168.77.209
+
+R3# show ntp associations   (before fault)
+*~192.168.77.209   127.127.1.1   3   14   16   1   2.00   1.00   0.00
+ * sys.peer, # selected
+
+--- after fault, R3 re-polled ---
+R3# show ntp status
+Clock is synchronized, stratum 15, reference is 192.168.77.209
+
+R3# show ntp associations
+*~192.168.77.209   127.127.1.1   15   0   16   377   5.00   0.00   0.12
+ * sys.peer, # selected","R2's NTP master stratum was changed from 3 to 15 (the worst valid stratum value in Cisco IOS, one below the protocol's reserved ""unsynchronized"" value of 16). Since NTP clients normally synchronize at one stratum above their time source, R3 recalculated its own stratum to match (15) after its next poll. Packet Tracer's NTP simulation did not reject or flag the degraded stratum as invalid -- R3 continued reporting ""synchronized"" with R2 as its selected system peer, meaning a severely degraded time source can silently propagate through an NTP hierarchy without triggering any visible error on client routers.",Layer 7,NTP / Stratum Misconfiguration,Low
+C019,"HR-20 (192.168.20.20, intended VLAN20) can no longer ping its correct default gateway (192.168.20.1) -- 100% loss. It also cannot ping VLAN30's gateway (192.168.30.1) despite now being physically switched into that VLAN, since its own static IP configuration doesn't belong to that subnet. Other VLAN30 devices (e.g., IT-30) remain fully functional with 0% loss to their gateway.","A-SW1 access switch has three access ports: Fa0/1 (Staff-10, VLAN10), Fa0/6 (HR-20, VLAN20), Fa0/11 (IT-30, VLAN30). HR-20 is statically configured with IP 192.168.20.20/24, gateway 192.168.20.1.","A-SW1# show vlan brief   (before fault)
+20   HR   active   Fa0/1
+30   IT   active   Fa0/6, Fa0/11
+
+--- fault applied ---
+A-SW1(config)#interface FastEthernet0/6
+A-SW1(config-if)#switchport access vlan 30
+
+A-SW1# show vlan brief   (after fault)
+20   HR   active   Fa0/1
+30   IT   active   Fa0/6, Fa0/11
+
+A-SW1# show running-config | section interface FastEthernet0/6
+interface FastEthernet0/6
+ switchport access vlan 30
+ switchport mode access
+
+PC HR-20> ping 192.168.20.1
+Request timed out. (x4, 100% loss)
+
+PC HR-20> ping 192.168.30.1
+Request timed out. (x4, 100% loss)
+
+PC IT-30> ping 192.168.30.1
+Reply from 192.168.30.1: ... (x4, 0% loss)","HR-20's switch port (FastEthernet0/6 on A-SW1) was reassigned from VLAN20 (its correct VLAN) to VLAN30. HR-20 retains its original static IP configuration (192.168.20.20/24, gateway 192.168.20.1), which no longer matches the broadcast domain it is physically connected to. ARP requests for its own gateway (192.168.20.1) never reach VLAN20 members, causing total loss to its intended gateway. Simultaneously, it cannot reach VLAN30's gateway either, since its own IP does not belong to that subnet. Other legitimate VLAN30 devices are unaffected, confirming the fault is isolated to a single misassigned access port rather than a VLAN-wide failure.",Layer 2,VLAN / Wrong Access Port Assignment,High
+C020,"HR-20 (VLAN20) cannot reach the DC Server (192.168.1.10) -- 100% loss. Staff-10 (VLAN10) can still reach its gateway normally (0% loss), suggesting an alternate path is being used. A-SW1 logs repeated CDP native VLAN mismatch warnings and Spanning Tree actively blocks Port-channel2 due to inconsistent native VLAN detection.","A-SW1's Port-channel2 (Fa0/21, Fa0/22) trunks to D-SW2 (confirmed via CDP neighbor table, correcting an earlier assumption that this link went to D-SW1). A-SW1 also has Port-channel4 to D-SW1 as a redundant path. Both trunks originally used the default native VLAN (VLAN1).","A-SW1(config-if)#switchport trunk native vlan 10
+
+%SPANTREE-2-RECV_PVID_ERR: Received BPDU with inconsistent peer vlan id 1 on Port-channel2 VLAN10.
+%SPANTREE-2-BLOCK_PVID_LOCAL: Blocking Port-channel2 on VLAN0010. Inconsistent local vlan.
+
+%CDP-4-NATIVE_VLAN_MISMATCH: Native VLAN mismatch discovered on FastEthernet0/21 (10), with D-SW2 FastEthernet0/21 (1).
+%CDP-4-NATIVE_VLAN_MISMATCH: Native VLAN mismatch discovered on FastEthernet0/22 (10), with D-SW2 FastEthernet0/22 (1).
+%CDP-4-NATIVE_VLAN_MISMATCH: Native VLAN mismatch discovered on FastEthernet0/21 (10), with D-SW2 Port-channel2 (1).
+%CDP-4-NATIVE_VLAN_MISMATCH: Native VLAN mismatch discovered on FastEthernet0/22 (10), with D-SW2 Port-channel2 (1).
+
+A-SW1# show cdp neighbors
+D-SW1   Por 4   3560   Fas 0/23
+D-SW1   Por 4   3560   Fas 0/24
+D-SW1   Por 4   3560   Por 4
+D-SW2   Por 2   3560   Fas 0/21
+D-SW2   Por 2   3560   Fas 0/22
+D-SW2   Por 2   3560   Por 2
+
+PC Staff-10> ping 192.168.10.1   → Reply, 0% loss
+PC HR-20> ping 192.168.1.10       → Request timed out, 100% loss","A-SW1's Port-channel2 (trunk to D-SW2) had its native VLAN changed from the default (VLAN1) to VLAN10, while D-SW2's side remained at VLAN1. Cisco Spanning Tree detected the inconsistent native VLAN via a BPDU PVID mismatch and automatically blocked Port-channel2 on VLAN10 as a loop/misconfiguration safeguard, in addition to CDP logging the mismatch. This effectively removed one of A-SW1's two redundant uplinks (to D-SW2), causing VLANs or traffic paths dependent on that specific link to lose connectivity, while traffic able to reroute via the remaining uplink (to D-SW1) continued working normally.",Layer 2,VLAN / Native VLAN Mismatch (STP PVID Blocking),High
+C021,"PC1's subnet mask was broadened from /24 to /22, causing it to incorrectly treat the remote 192.168.2.0/24 subnet as locally connected. Despite this misconfiguration, PC1 successfully pings 192.168.2.2 (0% loss) with no visible symptom. PC1's ARP table reveals that 192.168.2.2 is mapped to Router0's real MAC address rather than PC2's own MAC, indicating Router0's Proxy ARP silently intercepted and relayed the traffic.","Router0 (Cisco 2811) connects two subnets: 192.168.1.0/24 (PC0, PC1 via Switch0) on FastEthernet0/0, and 192.168.2.0/24 (PC2, PC3 via Switch1) on FastEthernet0/1. Proxy ARP is enabled by default on Cisco IOS interfaces.","PC1 IP Configuration (before fault):
+IPv4 Address: 192.168.1.3
+Subnet Mask: 255.255.255.0
+Default Gateway: 192.168.1.1
+
+--- fault applied ---
+PC1 IP Configuration (after fault):
+Subnet Mask: 255.255.252.0   (broadened from /24 to /22)
+
+C:\>ping 192.168.1.2   → Reply, 0% loss (same subnet, unaffected)
+C:\>ping 192.168.1.1   → Reply, 0% loss (gateway, unaffected)
+C:\>ping 192.168.2.2   → Reply, 0% loss (unexpectedly successful)
+
+C:\>arp -a
+Internet Address   Physical Address    Type
+192.168.1.1        0005.5e2a.5701      dynamic
+192.168.1.2        0000.0c1d.bd3e      dynamic
+192.168.2.2        0005.5e2a.5701      dynamic   <-- same MAC as 192.168.1.1 (Router0)","PC1's subnet mask was changed from 255.255.255.0 (/24) to 255.255.252.0 (/22), causing it to incorrectly believe 192.168.2.0/24 (a remote subnet reachable only through Router0) is part of its own local network. Rather than sending traffic to its default gateway for routing, PC1 issued an ARP request directly for 192.168.2.2. Because Router0 has Proxy ARP enabled by default, it responded to this ARP request with its own MAC address, causing PC1 to unknowingly send all ""local"" traffic for 192.168.2.2 to the router, which then correctly routed it to the real destination. As a result, the misconfiguration produced no visible connectivity symptom, illustrating that Proxy ARP can silently compensate for incorrect subnet masks on end hosts.",Layer2/3,Subnet Mask Misconfiguration / Proxy ARP Compensation,Low
+C022,"PC0 (2001:1::2) can now reach PC2 (2001:3::2) with 0% loss, even though this traffic path was previously and intentionally blocked. No other connectivity in the network is affected — PC0→PC3 and PC1→PC2 continue to work normally, matching pre-fault behavior.","Router0 (Fa0/0, 2001:1::1) connects LAN1 (2001:1::0/64, PC0/PC1 via Switch0) to Router1 (Fa0/1, 2001:3::1) connecting LAN2 (2001:3::0/64, PC2/PC3 via Switch1) over a point-to-point WAN link (2001:2::0/64). IPv6 ACL ""NG"" is applied inbound on Router0's Fa0/0, originally denying only PC0→PC2 traffic while permitting all else.","Router0# show access-lists
+IPv6 access list NG
+    permit ipv6 host 2001:1::2 host 2001:3::2
+    permit ipv6 any any
+
+PC0> ping 2001:3::2
+Reply from 2001:3::2: bytes=32 time<1ms TTL=126 (x4)
+Ping statistics for 2001:3::2: Sent = 4, Received = 4, Lost = 0 (0% loss)","The IPv6 ACL ""NG"" on Router0's Fa0/0 originally denied traffic from PC0 (2001:1::2) to PC2 (2001:3::2) explicitly, followed by a catch-all permit for everything else. During a config edit, the specific deny statement was mistakenly re-entered as a permit for the same host pair, silently reversing the intended security policy. Since the ACL still contains a rule matching that exact traffic (now permitting instead of denying it), the change produces no errors or warnings — the policy simply stops doing what it was designed to do, while all unrelated traffic remains unaffected.",Layer 3,ACL / IPv6 / Deny-to-Permit Statement Typo,Medium
+C023,"Laptop1 (previously connected wirelessly with 0% loss) suddenly loses all network connectivity — pings to the default gateway (192.168.0.1) time out completely (100% loss), and its wireless client shows ""No association with access point."" Laptop0, on the same access point, remains fully functional with 0% loss to both the gateway and PC0. Laptop1's IP configuration still shows its last-known DHCP lease (192.168.0.102), since it never received a deauthentication or new lease — the failure is purely at the wireless association layer.","Laptop1 (previously connected wirelessly with 0% loss) suddenly loses all network connectivity — pings to the default gateway (192.168.0.1) time out completely (100% loss), and its wireless client shows ""No association with access point."" Laptop0, on the same access point, remains fully functional with 0% loss to both the gateway and PC0. Laptop1's IP configuration still shows its last-known DHCP lease (192.168.0.102), since it never received a deauthentication or new lease — the failure is purely at the wireless association layer.","Laptop1> ping 192.168.0.1
+Request timed out. (x4)
+Ping statistics for 192.168.0.1:
+    Packets: Sent = 4, Received = 0, Lost = 4 (100% loss)
+
+Laptop1 IP Configuration (stale, pre-fault lease):
+IPv4 Address: 192.168.0.102
+Subnet Mask: 255.255.255.0
+Default Gateway: 192.168.0.1
+
+Laptop1 PC Wireless > Link Information:
+""No association with access point""
+Adapter is Inactive
+
+Laptop0> ping 192.168.0.1
+Reply from 192.168.0.1: bytes=32 time=21ms TTL=255 (x4, 0% loss)
+Laptop0> ping 192.168.0.103
+Reply from 192.168.0.103: bytes=32 time=34ms TTL=128 (x4, 0% loss)
+
+Laptop0 PC Wireless > Connect tab:
+Security: WPA1-PSK
+Adapter is Active","Laptop1> ping 192.168.0.1
+Request timed out. (x4)
+Ping statistics for 192.168.0.1:
+    Packets: Sent = 4, Received = 0, Lost = 4 (100% loss)
+
+Laptop1 IP Configuration (stale, pre-fault lease):
+IPv4 Address: 192.168.0.102
+Subnet Mask: 255.255.255.0
+Default Gateway: 192.168.0.1
+
+Laptop1 PC Wireless > Link Information:
+""No association with access point""
+Adapter is Inactive
+
+Laptop0> ping 192.168.0.1
+Reply from 192.168.0.1: bytes=32 time=21ms TTL=255 (x4, 0% loss)
+Laptop0> ping 192.168.0.103
+Reply from 192.168.0.103: bytes=32 time=34ms TTL=128 (x4, 0% loss)
+
+Laptop0 PC Wireless > Connect tab:
+Security: WPA1-PSK
+Adapter is Active",Layer 1/2,Wireless Security / WPA Mismatch,High
+C024,"Laptop1 suddenly loses all wireless connectivity — pings to the default gateway (192.168.0.1) time out completely (100% loss), and its wireless client shows ""No association with access point,"" Adapter Inactive. Laptop0 on the same access point remains fully functional with 0% loss to the gateway. Both laptops' security settings are unchanged and identical (open network) — only Laptop1 is affected.","WRT300N Wireless Router0 provides SSID ""MyWiFi"" (open/no security) to Laptop0 (MAC 0001.6411.1AE2) and Laptop1 (MAC 0090.0C97.77C1), plus PC0 wired via FastEthernet, all on 192.168.0.0/24 via DHCP, gateway 192.168.0.1. Wireless MAC Filter was enabled in ""Permit"" (allow-list) mode, with only Laptop0's MAC address entered into the filter table — Laptop1's MAC was never added.","Laptop0> ping 192.168.0.1
+Reply from 192.168.0.1: bytes=32 time=25ms TTL=255 (x4)
+Ping statistics for 192.168.0.1: Sent = 4, Received = 4, Lost = 0 (0% loss)
+
+Laptop1> ping 192.168.0.1
+Request timed out. (x4)
+Ping statistics for 192.168.0.1: Sent = 4, Received = 0, Lost = 4 (100% loss)
+
+Laptop1 IP Configuration (stale, pre-fault lease, never renewed):
+IPv4 Address: 192.168.0.100
+Subnet Mask: 255.255.255.0
+Default Gateway: 192.168.0.1
+
+Laptop1 PC Wireless > Link Information:
+""No association with access point""
+Adapter is Inactive","Wireless MAC address filtering was enabled on Wireless Router0 in ""Permit only listed MACs"" mode, but the allow-list was populated with only Laptop0's MAC address — Laptop1's MAC was omitted, whether by oversight or incomplete data entry during setup. Since Laptop1's MAC doesn't match any entry in the permit list, the access point rejects its association requests entirely, regardless of correct SSID or security settings on the client side. This fails at the same layer as Case 23 (association/authentication, below IP), but the underlying cause is entirely different — hardware-address filtering rather than an encryption/passphrase mismatch — meaning a technician checking only security settings would find nothing wrong and must specifically check the MAC filter table to diagnose it.",Layer 2 ,Wireless / MAC Address Filter,High
+C025,"PC0 can no longer resolve any new hostname — attempting to ping an unfamiliar domain (e.g., testsite12345.com) fails immediately with ""Ping request could not find host... Please check the name and try again,"" even though direct IP-based connectivity to both the DNS server (192.168.1.4) and the actual destination (173.252.110.27) remains fully functional. Previously-cached hostnames (www.facebook.com, www.google.com) continue to resolve locally from PC0's DNS cache, temporarily masking the outage until a new lookup is attempted.","NetworkGeek Router connects LAN (192.168.1.0/24, PC0/PC1, DNS server at 192.168.1.4) to ISP Router, which in turn connects to Facebook Router (173.252.0.0/16) and Google Router (74.0.0.0/8) via static routes. Server1 (192.168.1.4) runs the network's DNS service, originally On, with A records for www.facebook.com (173.252.110.27) and www.google.com (74.125.236.87).","192.168.1.4 (Server1) — Services > DNS:
+DNS Service: Off
+Resource Records: www.facebook.com (A, 173.252.110.27), www.google.com (A, 74.125.236.87) — still present, unaffected
+
+PC0> ping testsite12345.com
+Ping request could not find host testsite12345.com. Please check the name and try again.
+
+PC0> ping 192.168.1.4
+Reply from 192.168.1.4: bytes=32 time<1ms TTL=128 (x4)
+Ping statistics for 192.168.1.4: Sent = 4, Received = 4, Lost = 0 (0% loss)
+
+PC0> ping 173.252.110.27
+Reply from 173.252.110.27: bytes=32 time<1ms TTL=125
+Ping statistics for 173.252.110.27: Sent = 4, Received = 1, Lost = 3 (75% loss)","The DNS service on Server1 (192.168.1.4) was manually disabled (toggled Off), while its resource records remained untouched and its network connectivity was unaffected. Because the service itself is not listening for or answering DNS queries, any new hostname lookup fails outright with a client-side ""could not find host"" error, rather than returning an incorrect answer (contrast with Case 17, where DNS was up but returned a wrong A record). Previously resolved hostnames continued to work temporarily due to client-side DNS caching, which can mask the outage until the cache expires or an uncached name is queried — an important distinction for diagnosing intermittent-looking DNS failures",Layer 7,DNS / Service Disabled,Medium
+C026,"NetworkGeek Router connects LAN (192.168.1.0/24, PC0/PC1, DNS server at 192.168.1.4) to ISP Router, which in turn connects to Facebook Router (173.252.0.0/16) and Google Router (74.0.0.0/8) via static routes. Server1 (192.168.1.4) runs the network's DNS service, originally On, with A records for www.facebook.com (173.252.110.27) and www.google.com (74.125.236.87).","Router0 (SSN College Network) connects PC0 (192.168.1.2) and PC1 (192.168.1.3) on 192.168.1.0/24 to the ISP core router via FastEthernet0/0 (200.1.1.1), reaching the Google Server (192.168.1.2, inside Google Network) through Router2 (ISP), Router3, and Switch2. Static NAT was configured for both PC0 and PC1, but both were mapped to the same single outside global address.","Router0(config)#ip nat inside source static 192.168.1.2 200.1.1.1
+Router0(config)#ip nat inside source static 192.168.1.3 200.1.1.1
+
+Router0#show ip nat translation
+Pro  Inside global    Inside local      Outside local     Outside global
+---  200.1.1.1        192.168.1.3       ---               ---
+
+(No entry for 192.168.1.2 exists at all — PC0's static mapping was silently overwritten)
+
+PC1> ping 192.168.1.2 (run 3x consecutively)
+Ping statistics for 192.168.1.2: Sent = 4, Received = 4, Lost = 0 (0% loss) — every attempt
+
+PC0> ping 192.168.1.2 (run 3x consecutively)
+Attempt 1: Sent = 4, Received = 4, Lost = 0 (0% loss)
+Attempt 2: Sent = 4, Received = 4, Lost = 0 (0% loss)
+Attempt 3: Sent = 2, Received = 1, Lost = 1 (50% loss, interrupted)","Two static NAT entries were configured on Router0, both mapping different inside hosts (PC0 and PC1) to the identical outside global address (200.1.1.1). Since a single outside address cannot simultaneously serve two distinct static translations, Cisco IOS silently accepted both commands without any error, but only the most recently configured mapping (PC1) remained active in the NAT table — PC0's translation was overwritten without warning. Because both hosts share the same subnet, gateway, and outbound path, PC0's traffic can still traverse the router and occasionally succeed (likely riding on leftover session state or the router's forwarding still passing some packets through before consistently failing translation lookup), producing confusing, non-deterministic packet loss rather than a clean, easily-diagnosed outage — precisely the kind of symptom that's hard to trace back to NAT without directly inspecting the translation table.",Layer 3/4 ,NAT / Static Address Overlap,Medium
+C027,"No PCs report a hard connectivity outage, but network administrators notice unexpected latency and traffic pattern changes for VLAN10 — traffic that should transit through D-SW1 (the intended distribution-layer root) now traverses an extra hop through A-SW1 (an access-layer switch) instead. show spanning-tree vlan 10 on D-SW1 shows it is no longer root, with its uplink port now in a Root role rather than Designated, while A-SW1 reports itself as root bridge.","A-SW1 and A-SW2 (access-layer) connect redundantly via LACP EtherChannel to D-SW1 and D-SW2 (distribution-layer), forming a fully meshed Layer 2 topology. Per network design, D-SW1 is intended to be root bridge for VLAN10/20, and D-SW2 root bridge for VLAN30. A-SW1 originally ran at the default STP priority (32768) for VLAN10, correctly deferring root status to D-SW1 (priority 24586).","A-SW1# show spanning-tree vlan 10
+VLAN0010
+  Spanning tree enabled protocol ieee
+  Root ID    Priority    4106
+             Address     0004.9A8E.BA96
+             This bridge is the root
+             Hello Time   2 sec  Max Age 20 sec  Forward Delay 15 sec
+
+  Bridge ID  Priority    4106  (priority 4096 sys-id-ext 10)
+             Address     0004.9A8E.BA96
+
+Interface           Role Sts Cost      Prio.Nbr Type
+Po4                 Desg FWD 12        128.26   P2p
+Fa0/1               Desg FWD 19        128.1    P2p
+Po2                 Desg LIS 12        128.25   P2p
+
+D-SW1# show spanning-tree vlan 10
+VLAN0010
+  Root ID    Priority    4106
+             Address     0004.9A8E.BA96
+             Cost        12
+             Port        28 (Port-channel4)
+
+  Bridge ID  Priority    24586  (priority 24576 sys-id-ext 10)
+             Address     0001.632A.D041
+
+Interface           Role Sts Cost      Prio.Nbr Type
+Po4                 Root FWD 12        128.28   P2p
+Po3                 Desg FWD 12        128.27   P2p
+Gi0/1               Desg FWD 4         128.25   P2p
+Gi0/2               Desg FWD 4         128.26   P2p","A-SW1's STP priority for VLAN10 was manually lowered from the default (32768) to 4096 — well below D-SW1's priority (24586). Since STP elects the switch with the numerically lowest bridge priority as root, A-SW1 (an access-layer switch never intended to hold this role per the network design) won the root bridge election, displacing D-SW1. This forces all VLAN10 traffic between A-SW1, A-SW2, and D-SW1/D-SW2 to recalculate optimal paths relative to the new root, likely adding hops and altering which redundant links are blocked versus forwarding — a functioning but suboptimal and unintended topology that produces no outright connectivity failure, only degraded/altered performance that's easy to miss without directly checking show spanning-tree.",Layer 2,STP / Root Bridge Priority Misconfiguration,Medium
+C028,"Network administrators discover VLAN 30 (""IT"") has been silently renamed to ""CORRUPTED"" on D-SW1 and D-SW2 — distribution-layer switches that were never directly modified. No connectivity was lost (VLAN 30 remains active with the same port assignments), but any management tooling, documentation, or scripts referencing the VLAN by name break, and the unexplained change causes confusion since no one configured D-SW1/D-SW2 directly.","A-SW1, A-SW2 (access-layer) and D-SW1, D-SW2 (distribution-layer) form a fully redundant EtherChannel mesh. All four switches originally had no VTP domain configured (blank) and mismatched configuration revision numbers — A-SW1/A-SW2 at revision 144 (from prior, disconnected lab work), D-SW1/D-SW2 at revision 39 (the currently accurate, in-use database). All switches operate in VTP Server mode.","A-SW1#vlan 30
+A-SW1(config-vlan)#name CORRUPTED
+
+--- After 'vtp domain CORPNET' applied to all four switches ---
+
+D-SW1# show vlan brief
+VLAN Name                Status  Ports
+10   Staff               active  ...
+20   HR                  active  ...
+30   CORRUPTED           active  Fa0/1, Fa0/6, Fa0/11   <- renamed, was ""IT""
+
+D-SW2# show vlan brief
+VLAN Name                Status  Ports
+10   Staff               active  ...
+20   HR                  active  ...
+30   CORRUPTED           active  Fa0/1, Fa0/6, Fa0/11   <- renamed, was ""IT""
+
+D-SW1# show vtp status
+Configuration Revision : 144   (was 39 before domain name was set)","A-SW1 retained a stale VTP configuration revision number (144) from earlier, disconnected lab work, while the live, currently-accurate distribution switches (D-SW1, D-SW2) sat at a lower revision (39). No VTP domain name was configured on any switch beforehand, so no synchronization occurred. The moment a common domain name (""CORPNET"") was applied to all four switches, VTP's rule — trust the highest revision number as authoritative, regardless of which database is actually current — caused every other switch in the domain to accept A-SW1's outdated VLAN database, silently overwriting VLAN 30's name everywhere. This is the textbook ""rogue switch with stale config wipes the network"" VTP failure mode: the fault isn't a typo or a broken link, it's a switch that was technically correctly configured for its own (outdated) context, whose mere reconnection to the domain retroactively corrupts every other switch, with no warning, confirmation prompt, or error logged anywhere.",Layer 2,: VTP / Configuration Revision Overwrite,High
+C029,"PC at BR-01 becomes completely unreachable from HQ during an ISP link outage, even though a floating static backup route was proactively configured for this exact failure scenario","Dual-path topology: HQ reaches BR-01's LAN (10.1.1.0/24) primarily via OSPF through the ISP link (60.240.29.2); a direct HQ-BR-01 link (172.16.1.1/172.16.1.2, non-OSPF) exists as physical backup, intended to be used via a floating static route","Baseline (ISP up):
+show ip route | include 10.1.1.0
+O    10.1.1.0/24 [110/3] via 60.240.29.2, GigabitEthernet0/0/0
+(static route present in config, AD 130, correctly hidden by OSPF)
+
+--- ISP interface shut down (simulated outage) ---
+
+show run | include ip route
+ip route 10.1.1.0 255.255.255.0 9.9.9.9 130
+
+show ip route | include 10.1.1.0
+(no output — route not installed)
+
+ping 10.1.1.1
+Success rate is 0 percent (0/5)
+
+traceroute 10.1.1.1
+1  * * *
+2  * * *
+...(all hops timeout)","The floating static route's next-hop (9.9.9.9) was mistyped and does not correspond to any real, directly-connected subnet. Because Cisco IOS requires a static route's next-hop to be recursively resolvable to a live interface before installing it in the routing table, the route is accepted into the configuration (visible via show run) but never actually appears in the RIB. When the primary OSPF path fails, there is no fallback route at all — despite the backup appearing correctly configured — resulting in complete, silent loss of reachability to the remote network",Layer 3,Static Routing / Failover,High
+C030,"Pinging 192.168.1.2 from PC1 produces inconsistent results — succeeding completely (0% loss) on one attempt and failing completely (100% loss, all ""Request timed out"") on the very next attempt, with no configuration change in between",SSN College Network: PC0 (192.168.1.2) and PC1 (192.168.1.3) connect via Switch0 to Router0 (192.168.1.1) on the 192.168.1.0/24 subnet. Switch0's VLAN1 management interface was configured with 192.168.1.2 — duplicating PC0's existing address on the same broadcast domain,"Switch0 CLI (fault injection):
+Switch(config-if)#ip address 192.168.1.2 255.255.255.0
+Switch(config-if)#no shutdown
+%LINEPROTO-5-UPDOWN: Line protocol on Interface Vlan1, changed state to up
+%IP-4-DUPADDR: Duplicate address 192.168.1.2 on Vlan1, sourced by 00D0.9716.D2AA
+
+PC1, first ping to 192.168.1.2:
+Reply from 192.168.1.2: bytes=32 time=3ms TTL=128 (x4)
+Success rate is 100 percent (4/5), 0% loss
+
+PC1, second ping to 192.168.1.2 (immediately after):
+Request timed out. (x4)
+Success rate is 0 percent (100% loss)
+
+PC0, arp -a:
+Internet Address   Physical Address   Type
+192.168.1.1         000d.bd48.5302     dynamic
+192.168.1.3         0001.4242.eb0d     dynamic
+
+Switch0, ping 192.168.1.1 (gateway):
+.!!!!  Success rate is 80 percent (4/5)","Switch0's VLAN1 management interface was manually assigned the same static IP (192.168.1.2) already in use by PC0 on the same subnet/broadcast domain. Unlike Packet Tracer's PC/Server desktop GUI, which proactively blocks duplicate static IP entry with a validation popup, Cisco IOS on the switch accepted the configuration and only detected the conflict afterward via gratuitous ARP, logging a native %IP-4-DUPADDR system message. The result is a real, live duplicate-IP conflict on the network: any device attempting to reach 192.168.1.2 receives inconsistent results depending on which device (PC0 or Switch0) responds to ARP first at that moment, producing intermittent full-success/full-failure ping behavior rather than a clean single point of failure",Layer 2/3,Duplicate IP Address Conflict,Medium

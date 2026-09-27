@@ -1,0 +1,131 @@
+{
+  "C001": [],
+  "C002": [],
+  "C003": [],
+  "C004": [],
+  "C005": [],
+  "C006": [],
+  "C007": [],
+  "C008": [
+    {
+      "check": "interface_down",
+      "severity": "critical",
+      "message": "Interface reported down: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/7, changed state to down"
+    }
+  ],
+  "C009": [
+    {
+      "check": "ospf_adjacency_down",
+      "severity": "warning",
+      "message": "Routing adjacency dropped (check local config/mask/timers, not just link state): %OSPF-5-ADJCHG: Process 1, Nbr 4.4.4.4 on GigabitEthernet0/0 from FULL to DOWN"
+    },
+    {
+      "check": "ospf_adjacency_down",
+      "severity": "warning",
+      "message": "Routing adjacency dropped (check local config/mask/timers, not just link state): %OSPF-5-ADJCHG: Process 1, Nbr 6.6.6.6 on GigabitEthernet0/1.10 from FULL to DOWN"
+    },
+    {
+      "check": "ospf_adjacency_down",
+      "severity": "warning",
+      "message": "Routing adjacency dropped (check local config/mask/timers, not just link state): %OSPF-5-ADJCHG: Process 1, Nbr 6.6.6.6 on GigabitEthernet0/1.20 from FULL to DOWN"
+    },
+    {
+      "check": "ospf_adjacency_down",
+      "severity": "warning",
+      "message": "Routing adjacency dropped (check local config/mask/timers, not just link state): %OSPF-5-ADJCHG: Process 1, Nbr 6.6.6.6 on GigabitEthernet0/1.30 from FULL to DOWN"
+    }
+  ],
+  "C010": [
+    {
+      "check": "interface_down",
+      "severity": "critical",
+      "message": "Interface reported down: %LINK-5-CHANGED: Interface GigabitEthernet0/0, changed state to administratively down"
+    },
+    {
+      "check": "interface_down",
+      "severity": "critical",
+      "message": "Interface reported down: %LINEPROTO-5-UPDOWN: Line protocol on Interface GigabitEthernet0/0, changed state to down"
+    },
+    {
+      "check": "ospf_adjacency_down",
+      "severity": "warning",
+      "message": "Routing adjacency dropped (check local config/mask/timers, not just link state): %OSPF-5-ADJCHG: Process 1, Nbr 4.4.4.4 on GigabitEthernet0/0 from FULL to DOWN"
+    }
+  ],
+  "C011": [],
+  "C012": [
+    {
+      "check": "wrong_mask",
+      "severity": "warning",
+      "message": "Interfaces on 60.240.29.0/24 report inconsistent masks: {'255.255.255.0', '255.255.255.252', '/24', '/32'}"
+    },
+    {
+      "check": "ospf_adjacency_down",
+      "severity": "warning",
+      "message": "Routing adjacency dropped (check local config/mask/timers, not just link state): 06:18:14: %OSPF-5-ADJCHG: Process 1, Nbr 2.2.2.2 on GigabitEthernet0/0/0 from FULL to DOWN, Neighbor Down: Interface down or detached"
+    },
+    {
+      "check": "ospf_adjacency_down",
+      "severity": "warning",
+      "message": "Routing adjacency dropped (check local config/mask/timers, not just link state): 06:18:49: %OSPF-5-ADJCHG: Process 1, Nbr 3.3.3.3 on GigabitEthernet0/0/0 from FULL to DOWN, Dead Timer expired"
+    }
+  ],
+  "C013": [
+    {
+      "check": "duplicate_ip",
+      "severity": "critical",
+      "message": "Device-reported duplicate IP: %IP-4-DUPADDR: Duplicate address 192.168.10.1 on GigabitEthernet0/1.10, sourced by 0000.0C07.AC0A   (repeating)"
+    },
+    {
+      "check": "duplicate_ip",
+      "severity": "critical",
+      "message": "Device-reported duplicate IP: %IP-4-DUPADDR: Duplicate address 192.168.10.1 on GigabitEthernet0/1.10, sourced by 0000.0C07.AC0F   (repeating)"
+    }
+  ],
+  "C014": [
+    {
+      "check": "ospf_adjacency_down",
+      "severity": "warning",
+      "message": "Routing adjacency dropped (check local config/mask/timers, not just link state): 06:27:09: %OSPF-5-ADJCHG: Process 1, Nbr 4.4.4.4 on GigabitEthernet0/0 from FULL to DOWN, Dead timer expired"
+    },
+    {
+      "check": "ospf_adjacency_down",
+      "severity": "warning",
+      "message": "Routing adjacency dropped (check local config/mask/timers, not just link state): DMZ-Switch# 06:27:09: %OSPF-5-ADJCHG: Process 1, Nbr 6.6.6.6 on GigabitEthernet1/0/2 from FULL to DOWN, Dead timer expired"
+    }
+  ],
+  "C015": [
+    {
+      "check": "wrong_mask",
+      "severity": "warning",
+      "message": "Interfaces on 192.168.77.0/24 report inconsistent masks: {'255.255.255.240', '255.255.255.224'}"
+    }
+  ],
+  "C016": [],
+  "C017": [],
+  "C018": [],
+  "C019": [],
+  "C020": [],
+  "C021": [],
+  "C022": [],
+  "C023": [],
+  "C024": [],
+  "C025": [],
+  "C026": [],
+  "C027": [],
+  "C028": [],
+  "C029": [
+    {
+      "check": "wrong_mask",
+      "severity": "warning",
+      "message": "Interfaces on 10.1.1.0/24 report inconsistent masks: {'255.255.255.0', '/24'}"
+    }
+  ],
+  "C030": [
+    {
+      "check": "duplicate_ip",
+      "severity": "critical",
+      "message": "Device-reported duplicate IP: %IP-4-DUPADDR: Duplicate address 192.168.1.2 on Vlan1, sourced by 00D0.9716.D2AA"
+    }
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "total_cases": 30,
+  "osi_layer_agreement_rate": 0.567,
+  "evidence_present_rate": 1.0,
+  "confidence_distribution": {
+    "low": 4,
+    "medium": 1,
+    "high": 25
+  },
+  "per_case": [
+    {
+      "case_id": "C001",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C002",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "medium"
+    },
+    {
+      "case_id": "C003",
+      "osi_layer_match": false,
+      "has_evidence": true,
+      "ai_confidence": "low"
+    },
+    {
+      "case_id": "C004",
+      "osi_layer_match": false,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C005",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C006",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C007",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C008",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C009",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C010",
+      "osi_layer_match": false,
+      "has_evidence": true,
+      "ai_confidence": "low"
+    },
+    {
+      "case_id": "C011",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C012",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C013",
+      "osi_layer_match": false,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C014",
+      "osi_layer_match": false,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C015",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C016",
+      "osi_layer_match": false,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C017",
+      "osi_layer_match": false,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C018",
+      "osi_layer_match": false,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C019",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C020",
+      "osi_layer_match": false,
+      "has_evidence": true,
+      "ai_confidence": "low"
+    },
+    {
+      "case_id": "C021",
+      "osi_layer_match": false,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C022",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C023",
+      "osi_layer_match": false,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C024",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C025",
+      "osi_layer_match": false,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C026",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C027",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C028",
+      "osi_layer_match": false,
+      "has_evidence": true,
+      "ai_confidence": "low"
+    },
+    {
+      "case_id": "C029",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    },
+    {
+      "case_id": "C030",
+      "osi_layer_match": true,
+      "has_evidence": true,
+      "ai_confidence": "high"
+    }
+  ]
+}

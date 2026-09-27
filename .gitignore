@@ -1,0 +1,50 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment / secrets
+.env
+.env.*
+*.key
+config/secrets.yaml
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+
+# Generated / output data (uncomment if these are regenerated, not source data)
+# data/cases.csv
+# pipeline/ai_results.csv
+# pipeline/evaluation_summary.json
+# review/review_log.csv
+# rule_checker_results.json
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Dashboard build (if using node-based dashboard)
+node_modules/
+dashboard/build/
+dashboard/dist/
